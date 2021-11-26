@@ -1,227 +1,236 @@
 #include <iostream>
-#include <array>
+#include <vector>
 #include <cstdlib>
 #include <ctime>
 
-using namespace std;
-
-const int nmax = 6;
-using Labyrinthe = std::array<std::array<char,nmax>,nmax>;
-
-void CreerVide(Labyrinthe & lab) {
- cout<<"(CreerVide)"<<endl<<endl;
- for(int i=0;i<nmax;++i) {
-  for(int j=0;j<nmax;++j) {
-   if((j == 0) or (i == 0) or (i == (nmax-1)) or (j == (nmax-1))){
-    lab[i][j] = '*';
-   } else 
-   lab[i][j] = ' ';
-  }
- }
-}
-
-void PlacerObstacles(Labyrinthe & lab, int pobs) {
- cout<<"(PlacerObstacles)"<<endl<<endl;
- int obstacles = ((((nmax - 2) * (nmax - 2))  * pobs) / 100);
- 
- cout<<" obstacles: "<<obstacles<<" nmax: "<<nmax<<" pobs: "<<pobs<<" a "<<""<<endl;
- 
- int i,j;
- 
- while(obstacles>0) {
-  i = (rand()%(nmax-1))+1;
-  j = (rand()%(nmax-1))+1;
-  
-  if(lab[i][j] != '*') {
-   lab[i][j] = '*';
-   --obstacles;
-  }
- }
-}
-
-void PlacerSourisFromage(Labyrinthe & lab) {
- cout<<"(PlacerSourisFromage)"<<endl<<endl;
- bool tmp = true;
- int i,j;
- 
- while(tmp) { //placer souris
-  i = (rand()%(nmax-1))+1;
-  j = (rand()%(nmax-1))+1;
-  
-  if(lab[i][j] != '*'){
-   lab[i][j] = 'S';
-   tmp = false;
-   cout<<"(PlacerSourisFromage) souris ligne: "<<i<<" colonne: "<<j<<endl;
-  }  
- }
- 
- tmp = true;
- while(tmp){ //placer fromage
-  i = (rand()%(nmax-1))+1;
-  j = (rand()%(nmax-1))+1;
-  
-  if((lab[i][j] != '*') and (lab[i][j] != 'S')){
-   lab[i][j] = 'F';
-   tmp = false;
-  }  
- }
-}
-
-void Afficher(Labyrinthe lab){
- cout<<"(Afficher)"<<endl;
- for(int i=0;i<nmax;++i){
-  for(int j=0;j<nmax;++j){
-   cout<<lab[i][j];
-  }
-  cout<<endl;
- }
- cout<<endl<<endl;
-}
-
-//f)
+using ligne = std::vector<char>;
+using colonne = std::vector<char>;
+using Labyrinthe = std::vector<colonne>;
 struct Position{
- int ligne;
- int colonne;
+ int indexLigne;
+ int indexColonne;
 };
+using Positions = std::vector<Position>;
 
-Position Depart(Labyrinthe lab){
- Position res;
- for(int i=1;i<nmax-1;++i){
-  for(int j=1;j<nmax-1;++j){
-   if(lab[i][j] == 'S'){
-    res.ligne = i;
-    res.colonne = j;
-    return res;
+// Fonctions utilitaires
+void Afficher(Labyrinthe lab) {
+ for(ligne lig : lab){
+  for(char valeurCase : lig){
+   std::cout << valeurCase;
+  }
+  std::cout << std::endl;
+ }
+ std::cout << std::endl;
+}
+Positions getPosCasesVide(Labyrinthe lab) {
+ Positions posCasesVide;
+ Position tmpPos;
+ unsigned int nbLigne = lab.size();
+ unsigned int nbColonne = lab.at(0).size();
+
+ for(unsigned int indexLigne=0; indexLigne<nbLigne; ++indexLigne) {
+  for(unsigned int indexColonne=0; indexColonne<nbColonne; ++indexColonne) {
+   if(lab.at(indexLigne).at(indexColonne) == ' ') {
+    tmpPos.indexLigne = indexLigne;
+    tmpPos.indexColonne = indexColonne;
+    posCasesVide.push_back(tmpPos);
    }
   }
  }
- //erreur
- res.ligne = -1;
- res.colonne = -1;
- return res;
+
+ return posCasesVide;
 }
 
-//g)
-const int nmaxP = 20;
-using tabPiles = std::array<Position,nmaxP>;
-
-struct PilePosition{
- int som;
- tabPiles Piles;
+// Fonctions d'initialisation
+struct LigCol {
+ unsigned int nbLigne, nbColonne; 
 };
+void SaisirLigCol(LigCol & lg) {
+ std::cout << "Saisir le nombre de ligne (superieur a 1): ";
+ std::cin >> lg.nbLigne;
+ std::cout << "Saisir le nombre de colonne (superieur a 1): ";
+ std::cin >> lg.nbColonne;
+}
+void SaisirPobs(unsigned int & pobs) {
+  std::cout << "Saisir le taux de remplissage des murs interieurs (de 0 à 100): ";
+  std::cin >> pobs;
+  if (pobs > 100) {
+    std::cout << "Erreur. Le taux de remplissage est superieur a 100." << std::endl;
+    exit(1);
+  }
+}
+void DefinirLabyrinthe(LigCol & lg, unsigned int & pobs) {
+ std::cout << "Definir le labyrinthe:" << std::endl;
+ SaisirLigCol(lg);
+ SaisirPobs(pobs);
+}
+void CreerVide(Labyrinthe & lab, LigCol lg) {
+ unsigned int nbLigne, nbColonne;
+ nbLigne = lg.nbLigne;
+ nbColonne = lg.nbColonne;
+ ligne tmpLigne;
 
-void Initialiser(PilePosition & pPos){
+ for(unsigned int indexLigne=0; indexLigne<nbLigne; ++indexLigne) {
+  for(unsigned int indexColonne=0; indexColonne<nbColonne; ++indexColonne) {
+   if((indexColonne == 0) or (indexLigne == 0) or (indexLigne == (nbLigne-1)) or (indexColonne == (nbColonne-1)))
+    tmpLigne.push_back('*'); // coté du labyrinthe
+   else 
+    tmpLigne.push_back(' '); // interieur du labyrinthe
+  }
+  lab.push_back(tmpLigne);
+  tmpLigne.clear();
+ }
+}
+void PlacerObstacles(Labyrinthe & lab, int pobs) {
+ Positions posCasesVide = getPosCasesVide(lab);
+ unsigned int nbObstacle = (posCasesVide.size() * pobs) / 100; // arrondi a l'entier inferieur
+ unsigned int randIndexPosCasesVide;
+ 
+ // Prend une case vide aleatoire et le remplace par un obstacle
+ for(unsigned int indexNbObstacle=0; indexNbObstacle<nbObstacle; ++indexNbObstacle) {
+  randIndexPosCasesVide = (rand() % posCasesVide.size());
+  lab.at(posCasesVide.at(randIndexPosCasesVide).indexLigne).at(posCasesVide.at(randIndexPosCasesVide).indexColonne) = '*';
+  std::vector<Position>::iterator it = posCasesVide.begin();
+  std::advance(it, randIndexPosCasesVide);
+  posCasesVide.erase(it);
+ }
+}
+void PlacerSourisFromage(Labyrinthe & lab) {
+ Positions posCasesVide = getPosCasesVide(lab);
+ unsigned int randIndexPosCasesVide;
+
+ if(posCasesVide.size() < 2) {
+   std::cout << "Erreur. Il n'y a pas assez de case vide (2) pour placer le fromage et la souris." << std::endl;
+   exit(1);
+ }
+
+ // placer souris
+ randIndexPosCasesVide = (rand() % posCasesVide.size());
+ lab.at(posCasesVide.at(randIndexPosCasesVide).indexLigne).at(posCasesVide.at(randIndexPosCasesVide).indexColonne) = 'S';
+ std::vector<Position>::iterator it = posCasesVide.begin();
+ std::advance(it, randIndexPosCasesVide);
+ posCasesVide.erase(it);
+ // placer fromage
+ randIndexPosCasesVide = (rand() % posCasesVide.size());
+ lab.at(posCasesVide.at(randIndexPosCasesVide).indexLigne).at(posCasesVide.at(randIndexPosCasesVide).indexColonne) = 'F';
+ it = posCasesVide.begin();
+ std::advance(it, randIndexPosCasesVide);
+ posCasesVide.erase(it);
+}
+Position getPosSouris(Labyrinthe lab){
+ Position posSouris;
+ unsigned int nbLigne = lab.size();
+ unsigned int nbColonne = lab.at(0).size();
+ 
+ for(unsigned int indexLigne=0; indexLigne<nbLigne; ++indexLigne) {
+  for(unsigned int indexColonne=0; indexColonne<nbColonne; ++indexColonne) {
+   if(lab.at(indexLigne).at(indexColonne) == 'S') {
+    posSouris.indexLigne = indexLigne;
+    posSouris.indexColonne = indexColonne;
+    return posSouris;
+   }
+  }
+ }
+ // La souris n'a pas etait trouve
+ posSouris.indexLigne = -1;
+ posSouris.indexColonne = -1;
+ return posSouris;
+}
+
+// Pile
+struct PilePosition{
+ unsigned int som;
+ Positions Piles;
+};
+void Initialiser(PilePosition & pPos) {
  pPos.som = 0;
 }
-
-bool EstVide(PilePosition pPos){
+bool EstVide(PilePosition pPos) {
  return (pPos.som == 0);
 }
-
-void Empiler(PilePosition & pPos, Position P){
- if((pPos.som+1) == (nmaxP-1)){
-  cout<<"(Empiler) erreur pPos pleinne"<<endl<<endl;
- } else {
-  pPos.Piles[pPos.som].ligne = P.ligne;
-  pPos.Piles[pPos.som].colonne = P.colonne;
-  ++pPos.som;
- }
+void Empiler(PilePosition & pPos, Position P) {
+ if(pPos.Piles.size() == pPos.som)
+  pPos.Piles.push_back(P);
+ else
+  pPos.Piles.at(pPos.som-1) = P;
+ ++pPos.som;
 }
-
-Position Sommet(PilePosition pPos){
- return pPos.Piles[pPos.som];
+Position Sommet(PilePosition pPos) {
+ return pPos.Piles.at(pPos.som-1);
 }
-
-void Depiler(PilePosition & pPos){
+void Depiler(PilePosition & pPos) {
  if(!EstVide(pPos)) --pPos.som;
 }
-
-void Vider(PilePosition & pPos){
+void Vider(PilePosition & pPos) {
  pPos.som = 0;
 }
 
-Position AExplorer(Labyrinthe lab, Position P){
- if((lab[P.ligne+1][P.colonne] == ' ') or (lab[P.ligne+1][P.colonne] == 'F')) ++P.ligne;
- else if((lab[P.ligne-1][P.colonne] == ' ') or (lab[P.ligne-1][P.colonne] == 'F')) --P.ligne;
- else if((lab[P.ligne][P.colonne+1] == ' ') or (lab[P.ligne][P.colonne+1] == 'F')) ++P.colonne;
- else if((lab[P.ligne][P.colonne-1] == ' ') or (lab[P.ligne][P.colonne-1] == 'F')) --P.colonne;
- else {//erreur la souris ne peut pas bouger
-  P.ligne = -1;
-  P.colonne = -1;
+// Fonctions de simulation
+Position AExplorer(Labyrinthe lab, Position P) {
+ // Cherche les cases non explore ou le fromage du nord, sud, est puis ouest
+ if(lab.at(P.indexLigne+1).at(P.indexColonne) == ' ' or lab.at(P.indexLigne+1).at(P.indexColonne) == 'F') ++P.indexLigne;
+ else if(lab.at(P.indexLigne-1).at(P.indexColonne) == ' ' or lab.at(P.indexLigne-1).at(P.indexColonne) == 'F') --P.indexLigne;
+ else if(lab.at(P.indexLigne).at(P.indexColonne+1) == ' ' or lab.at(P.indexLigne).at(P.indexColonne+1) == 'F') ++P.indexColonne;
+ else if(lab.at(P.indexLigne).at(P.indexColonne-1) == ' ' or lab.at(P.indexLigne).at(P.indexColonne-1) == 'F') --P.indexColonne;
+ else {
+  // la souris ne peut pas bouger
+  P.indexLigne = -1;
+  P.indexColonne = -1;
  }
- //cout<<"(AExplorer) P ligne: "<<P.ligne<<" colonne: "<<P.colonne<<endl<<endl;
  return P;
 }
 
 void labyrintheResolution(Labyrinthe & lab) {
- Position S = Depart(lab); //S : position de la souris
+ Position posS = getPosSouris(lab); // position de depart
  PilePosition pPos;
- 
- cout<<"(labyrintheResolution) erreur"<< " ligne: "<<S.ligne<<" colonne: "<<S.colonne<<endl<<endl;
- 
  Initialiser(pPos);
- lab[S.ligne][S.colonne] = '.';
- 
- unsigned int nb = -1;
- 
+
+ unsigned int indexMouvementSouris = 0;
  while(true) {
-  ++nb;
-  
-  if(lab[S.ligne][S.colonne] == 'F') {
-   cout<<" la souris a trouvé le fromage"<<endl<<endl;
+  ++indexMouvementSouris;
+  lab.at(posS.indexLigne).at(posS.indexColonne) = '.';
+
+  posS = AExplorer(lab,posS);
+  if(posS.indexLigne == -1) {
+   // revient en arriere
+   Depiler(pPos);
+   if(EstVide(pPos)) {
+    std::cout << "La souris ne peut pas trouver le fromage." << std::endl << std::endl;
+    return;
+   }
+   posS.indexLigne = Sommet(pPos).indexLigne;
+   posS.indexColonne = Sommet(pPos).indexColonne;
+  } else if(lab.at(posS.indexLigne).at(posS.indexColonne) == 'F') {
+   std::cout << "La souris a trouve le fromage." << std::endl << std::endl;
    return;
-  } else if(S.ligne == -1) {
-    
-    if(EstVide(pPos)){
-     cout<<" il n'y a pas de solution pour trouver le fromage"<<endl<<endl;
-     return;
-    }
-    
-    cout<<"(labyrintheResolution) Sommet1 erreur pPos.som: "<<pPos.som<< " Sommet(pPos).ligne: "<<Sommet(pPos).ligne<<" Sommet(pPos).colonne: "<<Sommet(pPos).colonne<<endl<<endl;
-    
-    Depiler(pPos);
-    
-    cout<<"(labyrintheResolution) Sommet2 erreur pPos.som: "<<pPos.som<< " Sommet(pPos).ligne: "<<Sommet(pPos).ligne<<" Sommet(pPos).colonne: "<<Sommet(pPos).colonne<<endl<<endl;
-    
-    S.ligne = Sommet(pPos).ligne;
-    S.colonne = Sommet(pPos).colonne;
-    
-    cout<<"(labyrintheResolution) Souris erreur nb: "<<nb<< " ligne: "<<S.ligne<<" colonne: "<<S.colonne<<endl<<endl;
-    
-  } else{//pas trouve fromage
-   Empiler(pPos, S);
-   lab[S.ligne][S.colonne] = '.';
-   
+  } else {
+   // decouvre une nouvelle case
+   Empiler(pPos, posS);
   }
   
-  S = AExplorer(lab,S);
+  std::cout << "Mouvement n°" << indexMouvementSouris << ": " << std::endl;
+  lab.at(posS.indexLigne).at(posS.indexColonne) = 'S';
   Afficher(lab);
-  
  }
- 
 }
 
-
-int main(){
+int main(){ 
  srand(time(NULL));
  Labyrinthe lab;
+ LigCol lg;
+ unsigned int pobs;
+ DefinirLabyrinthe(lg, pobs);
  
- CreerVide(lab);
- 
- int pobs = 50;
- 
- /*if(((((nmax - 2) * (nmax - 2))  * pobs) / 100) >= (((nmax - 2) * (nmax - 2))-1)){
-  cout<<" (probs) erreur trop d obstacle"<<endl<<endl;
-  return 0;
- }
- */
- 
- PlacerObstacles(lab, pobs); //gere mal lor
- 
- PlacerSourisFromage(lab); //dans cette version la position de la souris n'est pas celle du fromage
- 
+ std::cout << std::endl << "Stades de la simulation:" << std::endl;
+ CreerVide(lab, lg);
+ std::cout << "Afficher le labyrinthe vide" << std::endl;
  Afficher(lab);
- 
+ std::cout << "Placer les obstacles" << std::endl;
+ PlacerObstacles(lab, pobs);
+ Afficher(lab);
+ std::cout << "Placer la souris et le fromage" << std::endl;
+ PlacerSourisFromage(lab);
+ Afficher(lab);
  labyrintheResolution(lab);
  
  return 0;
