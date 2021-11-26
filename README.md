@@ -2,7 +2,6 @@
 > Intelligence artificielle d'une souris qui cherche du fromage dans un labyrinthe.
 
 De manière aléatoire, on crée le labyrinthe avec des murs (\*). On met plus ou moins de murs.
-
 Puis on y met la souris et un fromage.
 
 Pour pouvoir avancer dans le labyrinthe, la souris connaît les endroits où elle est déjà passée.
