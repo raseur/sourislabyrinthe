@@ -41,7 +41,7 @@ Positions getPosCasesVide(Labyrinthe lab) {
  return posCasesVide;
 }
 
-// Fonctions d'initialisation
+// Fonctions d'initialisation du programme
 struct LigCol {
  unsigned int nbLigne, nbColonne; 
 };
@@ -73,7 +73,7 @@ void CreerVide(Labyrinthe & lab, LigCol lg) {
  for(unsigned int indexLigne=0; indexLigne<nbLigne; ++indexLigne) {
   for(unsigned int indexColonne=0; indexColonne<nbColonne; ++indexColonne) {
    if((indexColonne == 0) or (indexLigne == 0) or (indexLigne == (nbLigne-1)) or (indexColonne == (nbColonne-1)))
-    tmpLigne.push_back('*'); // coté du labyrinthe
+    tmpLigne.push_back('*'); // bords du labyrinthe
    else 
     tmpLigne.push_back(' '); // interieur du labyrinthe
   }
@@ -131,7 +131,7 @@ Position getPosSouris(Labyrinthe lab){
    }
   }
  }
- // La souris n'a pas etait trouve
+ // La souris n'a pas été trouvée
  posSouris.indexLigne = -1;
  posSouris.indexColonne = -1;
  return posSouris;
@@ -192,7 +192,7 @@ void labyrintheResolution(Labyrinthe & lab) {
 
   posS = AExplorer(lab,posS);
   if(posS.indexLigne == -1) {
-   // revient en arriere
+   // revient en arrière
    Depiler(pPos);
    if(EstVide(pPos)) {
     std::cout << "La souris ne peut pas trouver le fromage." << std::endl << std::endl;
